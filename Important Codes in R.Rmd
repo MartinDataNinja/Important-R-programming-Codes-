@@ -1,0 +1,109 @@
+---
+title: "Data Manipulation"
+author: "Martin"
+date: "2024-12-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Code that reading excel files and save excel file in R programming
+
+```{r}
+data<-read_xlsx("C:/Users/GK TECH/Downloads/Diarrhea Cases(2015-2024)_Population.xlsx")
+head(data)
+```
+
+Save excel file in working directory
+```{r}
+write_xlsx(data."C:/Users/GK TECH/Downloads/Diarrhea Cases(2015-2024)_Population.xlsx")
+```
+
+reading shapefile of Rwanda 
+
+```{r}
+shapefile_path <- "C:/Users/GK TECH/Downloads/rwa_adm3_2006_NISR_WGS1984_20181002.shp"
+shapefile_data <- st_read(shapefile_path)
+
+shapefile_data <- shapefile_data %>%
+  mutate(ADM3_EN = case_when(
+    ADM3_EN == "Mageregere"~"Mageragere",
+    ADM3_EN == "Shyrongi" ~ "Shyorongi",
+    ADM3_EN == "Rilima" ~ "Ririma",
+    TRUE ~ ADM3_EN
+  ))
+```
+
+Code that aggregate the data
+
+```{r}
+data_2023<-data_2023%>% group_by(Country,District,Sector,Year,Population)%>%
+  summarize(Diarrhoea_Cases = sum(Diarrhoea_Cases, na.rm = TRUE))
+head(data_2023)
+```
+
+
+Plotting interactive map in r
+```{r}
+plot <- ggplot(merged_data) +
+    geom_sf(aes(fill = SIR)) +
+    scale_fill_viridis_c(
+      option = "plasma",
+      limits = c(0, 5)
+    ) +
+    geom_sf_text(aes(label = ADM3_EN), size = 2, color = "black") + 
+    theme_minimal() +
+    labs(
+      title = paste("Spatial Distribution of SIR across sectors - 2023"),
+      fill = "SIR"
+    )
+
+interactive_plot <- ggplotly(plot, tooltip = c("label", "fill")) 
+interactive_plot
+```
+
+Code that put data as title using stringr library and removing district in the blackets
+
+```{r}
+data_2023 <- data_2023 %>%
+  mutate(Sector = str_to_title(Sector))
+
+data_2023 <- data_2023 %>%
+  mutate(Sector = str_replace(Sector, "\\s*\\([^\\)]+\\)", ""))
+head(data_2023)
+```
+
+merging dataset and the shapefile in the r programming 
+
+```{r}
+merged_data <- shapefile_data %>%
+  left_join(data_2023, by = c("ADM3_EN" = "Sector", "ADM2_EN" = "District"))
+```
+
+# Reshape to long format
+```{r}
+data_long <- data %>%
+  pivot_longer(
+    cols = `0-39y`:`>=40y`, 
+    names_to = "AGE_CATEGORY", 
+    values_to = "CASES" 
+  )
+data_long <- data_long %>%
+  mutate(SECTOR = str_to_title(SECTOR))
+
+write_xlsx(data_long,"expanded_data.xlsx")
+getwd()
+```
+
+
+
+
+
+
+
+
+
+
+
